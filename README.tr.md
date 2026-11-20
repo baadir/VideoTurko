@@ -1,5 +1,12 @@
 # VideoTurko
 
+> **Bu fork: RTX 5060 8 GB (`sm_120`, Blackwell) için** — [`alexturkey/VideoTurko`](https://github.com/alexturkey/VideoTurko) reposunun fork'udur (MIT `LICENSE` ve `NOTICE` korunmuştur; model ağırlığı veya derlenmiş ikili içermez). Eklenenler:
+> - Yerel `sm_120` derleme tarifi (CUDA 12.8.1 + `patches/SERIES.txt` + `CMAKE_CUDA_ARCHITECTURES=120`): [`docs/RTX5060_SM120_DERLEME.md`](docs/RTX5060_SM120_DERLEME.md)
+> - Kök neden ve RTX 5060 test raporu (39, 39+init, 56=117 sn, 209=356 sn @ 7438/8151 MiB, 192+init ~6.3–7.0 dk, hepsi `KAPI GECTI`): [`docs/RTX5060_TEST_RAPORU.md`](docs/RTX5060_TEST_RAPORU.md)
+> - Klip zincirleme rehberi (`--init-img` + `ffmpeg` birleştirme): [`docs/KLIP_ZINCIRI.md`](docs/KLIP_ZINCIRI.md)
+> - Yerel stdio MCP sunucusu (`engine/bin_sm120` otomatik seçimi): [`mcp/README.md`](mcp/README.md)
+> - `scripts/uret.ps1` içinde deneysel `VT_*` anahtarları (varsayılan kapalı; upstream 4 GB varsayılanları korunur).
+
 [English](README.md) · Türkçe · [简体中文](README.zh-CN.md) · [日本語](README.ja.md) · [Español](README.es.md) · [Русский](README.ru.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [العربية](README.ar.md) · [Português (BR)](README.pt-BR.md) · [Italiano](README.it.md) · [한국어](README.ko.md) · [हिन्दी](README.hi.md) · [Bahasa Indonesia](README.id.md) · [Tiếng Việt](README.vi.md) · [Polski](README.pl.md) · [Nederlands](README.nl.md) · [Українська](README.uk.md) · [فارسی](README.fa.md) · [עברית](README.he.md) · [ไทย](README.th.md) · [বাংলা](README.bn.md) · [اردو](README.ur.md) · [Ελληνικά](README.el.md) · [Čeština](README.cs.md) · [Română](README.ro.md) · [Magyar](README.hu.md) · [Svenska](README.sv.md) · [Azərbaycanca](README.az.md) · [Bahasa Melayu](README.ms.md)
 
 ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue) ![GPU](https://img.shields.io/badge/NVIDIA-4%20GB%20(sm__61)-76b900) ![License](https://img.shields.io/badge/code-MIT-green) ![Status](https://img.shields.io/badge/status-clean--root%20test%20pending-orange)
