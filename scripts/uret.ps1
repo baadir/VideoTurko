@@ -22,6 +22,9 @@
 # Ortam / environment: VT_ROOT (varsayilan: bu betigin ust klasoru), VT_ENGINE_BIN (sd-cli.exe klasoru), VT_MODEL_DIR (model dosyalari),
 #   VT_CUDA_BIN (cudart/cublas DLL klasoru, istege bagli), VT_PYTHON (kalite kapisi icin python + opencv),
 #   VT_MAX_JETON (4 GB kartta standart disi boyut icin jeton tavanini gecici ezer; sonuc garanti degil), VT_GPU_CC / VT_GPU_VRAM (compute capability / toplam VRAM MiB okumasini ezer, test icin).
+# Deneysel / teshis anahtarlari (varsayilan KAPALI; ayarlanmazsa varsayilan davranis degismez; bkz. docs\RTX5060_SM120_DERLEME.md):
+#   VT_ATTN_BUDGET (varsayilan 0.05), VT_IKI_ASAMA=1 (iki asamayi zorlar), VT_NO_FA=1 (--flash-attn off),
+#   VT_TT_RULES (--tensor-type-rules), VT_DIT (alternatif DiT GGUF yolu), VT_MAX_VRAM (--max-vram), VT_CHUNK_MB (QKV/MLP chunk MB, varsayilan 64).
 # Durdurma / stop: <VT_ROOT>\DUR dosyasi olusturun; betik DURDU yazar, sd-cli'yi kapatir (latent kaldiysa yeniden baslatinca devam etmez, bastan kosar).
 param(
     [Parameter(Mandatory)][string]$Istem,
@@ -91,6 +94,7 @@ if ($InitImg -and -not (Test-Path -LiteralPath $InitImg -PathType Leaf)) { throw
 if ($EndImg -and -not (Test-Path -LiteralPath $EndImg -PathType Leaf)) { throw "-EndImg dosyasi bulunamadi: $EndImg (son kare gorseli, PNG/JPG; video boyutunda verin, motor farkli boyutu esnetir)" }
 $sd = Join-Path $Motor 'sd-cli.exe'
 $DiT = Join-Path $ModelDir 'minimax_h3_fl2va_hyperflow_flash_14b-Q4_K_M.gguf'
+if ($env:VT_DIT) { $DiT = $env:VT_DIT }
 $TE = Join-Path $ModelDir 'qwen3vl_32b_minimax_h3-Q4_K_M.gguf'
 $VAE = Join-Path $ModelDir 'minimax_h3_sol_vae_fp16.safetensors'
 $AVAE = Join-Path $ModelDir 'minimax_h3_audio_vae_fp32.safetensors'
@@ -113,12 +117,16 @@ $AlanKat = ($W * $H) / 245760.0   # 640x384 = 1,0 (varsayilanda tavan degismez)
 if ($TavanDk -le 0) { $TavanDk = [int][Math]::Max(30, [Math]::Ceiling(80.0 * $Kare / 209 * $AlanKat)) }   # 209 kare = 80 dk (olculen ~48 dk DiT + VAE, x1,4 pay); alanla olceklenir
 
 function Ortak-Arg([string]$Out) {
+    $faVal = $(if ($env:VT_NO_FA -eq '1') { 'off' } else { 'off,diffusion=on' })
+    $attnBudget = $(if ($env:VT_ATTN_BUDGET) { $env:VT_ATTN_BUDGET } else { '0.05' })
     $a = @('-M', 'vid_gen', '--diffusion-model', $DiT, '--llm', $TE, '--vae', $VAE, '--audio-vae', $AVAE,
         '--prompt-file', $Istem, '-W', "$W", '-H', "$H", '--video-frames', "$Kare", '--fps', '24',
         '--steps', '6', '--sampling-method', 'euler', '--sigmas', 'hyperflow-h3-flash-6', '--cfg-scale', '1.0',
-        '--rng', 'cpu', '--seed', "$Seed", '-t', '4', '--flash-attn', 'off,diffusion=on',   # eski --diffusion-fa ile ayni ayar (motor: deprecated takma ad)
-        '--model-args', 'minimax_h3_attn_chunk_budget=0.05',
+        '--rng', 'cpu', '--seed', "$Seed", '-t', '4', '--flash-attn', $faVal,   # varsayilan: eski --diffusion-fa ile ayni ayar
+        '--model-args', "minimax_h3_attn_chunk_budget=$attnBudget",
         '--offload-to-cpu', '--mmap', '--backend', 'te=cpu')
+    if ($env:VT_TT_RULES) { $a += @('--tensor-type-rules', $env:VT_TT_RULES) }
+    if ($env:VT_MAX_VRAM) { $a += @('--max-vram', $env:VT_MAX_VRAM) }
     if ($InitImg) { $a += @('--init-img', $InitImg) }
     if ($EndImg) { $a += @('--end-img', $EndImg) }
     $a += @('--log-level', 'debug', '-o', $Out)
@@ -127,12 +135,13 @@ function Ortak-Arg([string]$Out) {
 # Ortam: jeton > 7680 iki asama (640x384'te 108+ kare ile ayni; dogrulanmis tarif: 209 icin DiT asamasi + ayri VAE asamasi; 141 icin ayri VAE kare+ses md5 bayt aynisi).
 # -TekAsama: elle tek surec (buyuk VRAM'li kart); varsayilan degismez.
 # -EndImg kucuk kartta (< $KucukKartMiB) her zaman iki asama: tek asamada 56 karede bile sigmadi [olctum 1050 Ti FLF56; iki asamada FLF56b GECTI].
-$IkiAsama = (($Jeton -gt 7680) -or ($EndImg -and $KucukKart)) -and -not $TekAsama
+$IkiAsama = (($Jeton -gt 7680) -or ($EndImg -and $KucukKart) -or ($env:VT_IKI_ASAMA -eq '1')) -and -not $TekAsama
 $Env1 = [ordered]@{}
 $Env2 = [ordered]@{}
+$ChunkMB = $(if ($env:VT_CHUNK_MB) { $env:VT_CHUNK_MB } else { '64' })
 if ($IkiAsama) {
     $Env1['SD_VRAM_MARGIN_MB'] = '1'; $Env1['SD_H3_EMBED_CUT'] = '1'; $Env1['SD_H3_DROP_QUEUED'] = '1'; $Env1['SD_H3_EVICT_PAST'] = '1'
-    $Env1['SD_ATTN_SET_OUT'] = '1'; $Env1['SD_QKV_CHUNK_MB'] = '64'; $Env1['SD_QKV_SET_OUT'] = '1'; $Env1['SD_MLP_CHUNK_MB'] = '64'
+    $Env1['SD_ATTN_SET_OUT'] = '1'; $Env1['SD_QKV_CHUNK_MB'] = $ChunkMB; $Env1['SD_QKV_SET_OUT'] = '1'; $Env1['SD_MLP_CHUNK_MB'] = $ChunkMB
     $Env1['SD_VIDEO_LATENT_SAVE'] = $Latent   # F209b/F209V2 tarifi; MLP_SET_OUT KAPALI (bellegi artirir)
     $Env2['SD_VRAM_MARGIN_MB'] = '256'; $Env2['SD_VAE_VRAM_MARGIN_MB'] = '256'; $Env2['SD_CUT_CACHE_HOST_MB'] = '100'
     $Env2['SD_VAE_NO_TILING_FALLBACK'] = '1'; $Env2['SD_VAE_EMBED_CUT'] = '1'; $Env2['SD_VIDEO_LATENT_LOAD'] = $Latent

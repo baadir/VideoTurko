@@ -1,2 +1,13 @@
 __pycache__/
 *.pyc
+model/
+model_sm120/
+engine/
+toolchain/
+build_work/
+indirme/
+runs/
+docs/prd/
+*.avi
+*.mp4
+*.png

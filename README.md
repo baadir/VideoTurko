@@ -1,5 +1,12 @@
 # VideoTurko
 
+> **This fork: RTX 5060 8 GB (`sm_120`, Blackwell) edition** — Forked from [`alexturkey/VideoTurko`](https://github.com/alexturkey/VideoTurko) (MIT `LICENSE` and `NOTICE` preserved; no model weights or compiled binaries included). Adds:
+> - Native `sm_120` build recipe (CUDA 12.8.1 + `patches/SERIES.txt` + `CMAKE_CUDA_ARCHITECTURES=120`): [`docs/RTX5060_SM120_DERLEME.md`](docs/RTX5060_SM120_DERLEME.md)
+> - Root cause & RTX 5060 acceptance report (39, 39+init, 56=117 s, 209=356 s at 7438/8151 MiB, 192+init ~6.3–7.0 min, all `KAPI GECTI`): [`docs/RTX5060_TEST_RAPORU.md`](docs/RTX5060_TEST_RAPORU.md)
+> - Clip-chaining guide (`--init-img` + `ffmpeg` stitching): [`docs/KLIP_ZINCIRI.md`](docs/KLIP_ZINCIRI.md)
+> - Local stdio MCP server (auto-selects `engine/bin_sm120`): [`mcp/README.md`](mcp/README.md)
+> - Experimental `VT_*` diagnostic switches in `scripts/uret.ps1` (all off by default; upstream 4 GB defaults unchanged).
+
 English · [Türkçe](README.tr.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md) · [Español](README.es.md) · [Русский](README.ru.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [العربية](README.ar.md) · [Português (BR)](README.pt-BR.md) · [Italiano](README.it.md) · [한국어](README.ko.md) · [हिन्दी](README.hi.md) · [Bahasa Indonesia](README.id.md) · [Tiếng Việt](README.vi.md) · [Polski](README.pl.md) · [Nederlands](README.nl.md) · [Українська](README.uk.md) · [فارسی](README.fa.md) · [עברית](README.he.md) · [ไทย](README.th.md) · [বাংলা](README.bn.md) · [اردو](README.ur.md) · [Ελληνικά](README.el.md) · [Čeština](README.cs.md) · [Română](README.ro.md) · [Magyar](README.hu.md) · [Svenska](README.sv.md) · [Azərbaycanca](README.az.md) · [Bahasa Melayu](README.ms.md)
 
 ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue) ![GPU](https://img.shields.io/badge/NVIDIA-4%20GB%20(sm__61)-76b900) ![License](https://img.shields.io/badge/code-MIT-green) ![Status](https://img.shields.io/badge/status-clean--root%20test%20pending-orange)
